@@ -1,0 +1,149 @@
+CREATE DATABASE DBTest
+
+GO
+USE DBTest
+GO
+
+CREATE TABLE Users
+(
+	email		VARCHAR(250) PRIMARY KEY	NOT NULL,
+	name		VARCHAR(250)				NOT NULL,
+	password	VARCHAR(MAX)				NOT NULL
+)
+
+GO
+
+CREATE PROCEDURE Sp_Select
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	SELECT email, name, password 
+	FROM Users
+END
+
+GO
+
+CREATE PROCEDURE Sp_Find
+	@pEmail VARCHAR(250)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF NOT EXISTS (SELECT 1 FROM Users WHERE email = @pEmail)
+	BEGIN
+		SELECT 'Email does not exist' AS [ErrorMessage];
+		RETURN
+	END
+
+	BEGIN TRY
+		BEGIN TRANSACTION;
+
+			SELECT email, name, password FROM Users
+			WHERE email = @pEmail
+
+			COMMIT TRANSACTION;
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		SELECT ERROR_MESSAGE() AS [ErrorMessage];
+	END CATCH;
+END;
+
+GO
+
+CREATE PROCEDURE Sp_Insert
+	@pEmail VARCHAR(250),
+	@pName VARCHAR(250),
+	@pPassword VARCHAR(MAX)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF EXISTS (SELECT 1 FROM Users WHERE email = @pEmail)
+	BEGIN
+		SELECT 'Email already exists' AS [ErrorMessage];
+		RETURN
+	END
+
+	BEGIN TRY
+		BEGIN TRANSACTION;
+
+			INSERT INTO Users(email, name, password)
+			VALUES(@pEmail, @pName, @pPassword)
+
+			COMMIT TRANSACTION;
+			SELECT 'Inserted' AS [Message];
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		SELECT ERROR_MESSAGE() AS [ErrorMessage];
+	END CATCH;
+END;
+
+GO
+
+CREATE PROCEDURE Sp_Update
+	@pEmail VARCHAR(250),
+	@pName VARCHAR(250),
+	@pPassword VARCHAR(MAX)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF NOT EXISTS (SELECT 1 FROM Users WHERE email = @pEmail)
+	BEGIN
+		SELECT 'Email does not exist' AS [ErrorMessage];
+		RETURN
+	END
+
+	BEGIN TRY
+		BEGIN TRANSACTION;
+
+			UPDATE Users SET name = @pName, password = @pPassword
+			WHERE email = @pEmail
+
+			COMMIT TRANSACTION;
+			SELECT 'Updated' AS [Message];
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		SELECT ERROR_MESSAGE() AS [ErrorMessage];
+	END CATCH;
+END;
+
+GO
+
+CREATE PROCEDURE Sp_Delete
+	@pEmail VARCHAR(250)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	IF NOT EXISTS (SELECT 1 FROM Users WHERE email = @pEmail)
+	BEGIN
+		SELECT 'Email does not exist' AS [ErrorMessage];
+		RETURN
+	END
+
+	BEGIN TRY
+		BEGIN TRANSACTION;
+
+			DELETE FROM Users WHERE email = @pEmail
+
+			COMMIT TRANSACTION;
+			SELECT 'Removed' AS [Message];
+
+	END TRY
+	BEGIN CATCH
+		ROLLBACK TRANSACTION;
+
+		SELECT ERROR_MESSAGE() AS [ErrorMessage];
+	END CATCH;
+END;
